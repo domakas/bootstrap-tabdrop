@@ -1,10 +1,11 @@
 /* =========================================================
- * bootstrap-tabdrop.js
- * http://www.eyecon.ro/bootstrap-tabdrop
+ * bootstrap-tabdrop.js angular edition
+ * https://github.com/domakas/bootstrap-tabdrop
  * =========================================================
  * Copyright 2012 Stefan Petre
  * Copyright 2013 Jenna Schabdach
  * Copyright 2014 Jose Ant. Aranda
+ * Copyright 2015 Domas Maksimas
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,157 +20,179 @@
  * limitations under the License.
  * ========================================================= */
 
-!function ($) {
+!function (angular) {
 
-	var WinResizer = (function () {
-		var registered = [];
-		var inited = false;
-		var timer;
-		var resize = function () {
-			clearTimeout(timer);
-			timer = setTimeout(notify, 100);
+	var app = angular.module('bootstrap.tabdrop', []);
+
+	app.directive('tabdrop', ['$parse', 'TabDrop', function($parse, TabDrop) {
+		var defaults = {
+			text: '<i class="fa fa-align-justify"></i>',
+			offsetTop: 0
 		};
-		var notify = function () {
-			for (var i = 0, cnt = registered.length; i < cnt; i++) {
-				registered[i].apply();
-			}
-		};
+
 		return {
-			register: function (fn) {
-				registered.push(fn);
-				if (inited === false) {
-					$(window).bind('resize', resize);
-					inited = true;
-				}
-			},
-			unregister: function (fn) {
-				var registeredFnIndex = registered.indexOf(fn);
-				if (registeredFnIndex > -1) {
-					registered.splice(registeredFnIndex, 1);
-				}
-			}
-		}
-	}());
-
-	var TabDrop = function (element, options) {
-		this.element = $(element);
-		this.options = options;
-
-		if (options.align === "left")
-			this.dropdown = $('<li class="dropdown hide pull-left tabdrop"><a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="display-tab"></span><b class="caret"></b></a><ul class="dropdown-menu"></ul></li>');
-		else
-			this.dropdown = $('<li class="dropdown hide pull-right tabdrop"><a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="display-tab"></span><b class="caret"></b></a><ul class="dropdown-menu"></ul></li>');
-
-		this.dropdown.prependTo(this.element);
-		if (this.element.parent().is('.tabs-below')) {
-			this.dropdown.addClass('dropup');
-		}
-
-		var boundLayout = $.proxy(this.layout, this);
-
-		WinResizer.register(boundLayout);
-		this.element.on('click', 'li:not(.tabdrop)', boundLayout);
-
-		this.teardown = function () {
-			WinResizer.unregister(boundLayout);
-			this.element.off('click', 'li:not(.tabdrop)', boundLayout);
+			link: linkFunction
 		};
 
-		this.layout();
-	};
+		function linkFunction(scope, element, attr) {
+      var data = element.data('tabdrop');
+			var option = $parse(attr.tabdrop)(scope);
+      var options = typeof option === 'object' && option;
 
-	TabDrop.prototype = {
-		constructor: TabDrop,
-
-		layout: function () {
-			var self = this;
-			var collection = [];
-      var isUsingFlexbox = function(el){
-        return el.element.css('display').indexOf('flex') > -1;
-      };
-
-			function setDropdownText(text) {
-				self.dropdown.find('a span.display-tab').html(text);
-			}
-
-			function setDropdownDefaultText(collection) {
-				var text;
-				if (jQuery.isFunction(self.options.text)) {
-					text = self.options.text(collection);
-				} else {
-					text = self.options.text;
-				}
-				setDropdownText(text);
-			}
-
-      // Flexbox support
-      function handleFlexbox(){
-        if (isUsingFlexbox(self)){
-          if (self.element.find('li.tabdrop').hasClass('pull-right')){
-          	self.element.find('li.tabdrop').css({position: 'absolute', right: 0});
-						self.element.css('padding-right', self.element.find('.tabdrop').outerWidth(true));
-          }
-        }  
-      }
-
-			function checkOffsetAndPush(recursion) {
-				self.element.find('> li:not(.tabdrop)')
-					.each(function () {
-						if (this.offsetTop > self.options.offsetTop) {
-							collection.push(this);
-						}
-					});
-
-				if (collection.length > 0) {
-					if (!recursion) {
-						self.dropdown.removeClass('hide');
-						self.dropdown.find('ul').empty();
-					}
-					self.dropdown.find('ul').prepend(collection);
-					
-					if (self.dropdown.find('.active').length == 1) {
-						self.dropdown.addClass('active');
-						setDropdownText(self.dropdown.find('.active > a').html());
-					} else {
-						self.dropdown.removeClass('active');
-						setDropdownDefaultText(collection);
-					}
-          handleFlexbox();
-					collection = [];
-					checkOffsetAndPush(true);
-				} else {
-					if (!recursion) {
-						self.dropdown.addClass('hide');
-					}
-				}
-			}
-    
-			self.element.append(self.dropdown.find('li'));
-			checkOffsetAndPush();
-		}
-	};
-
-	$.fn.tabdrop = function (option) {
-		return this.each(function () {
-			var $this = $(this),
-				data = $this.data('tabdrop'),
-				options = typeof option === 'object' && option;
 			if (!data) {
-				options = $.extend({}, $.fn.tabdrop.defaults, options);
-				data = new TabDrop(this, options);
-				$this.data('tabdrop', data);
+				options = angular.extend({}, defaults, options);
+				data = new TabDrop(element, options);
+				element.data('tabdrop', data);
 			}
 			if (typeof option == 'string') {
 				data[option]();
 			}
-		})
-	};
 
-	$.fn.tabdrop.defaults = {
-		text: '<i class="fa fa-align-justify"></i>',
-		offsetTop: 0
-	};
+      scope.$on('$destroy', data.teardown);
+		}
+	}]);
 
-	$.fn.tabdrop.Constructor = TabDrop;
+  app.factory('TabdropWinResizer', ['$window', '$timeout', function($window, $timeout) {
+    var registered = [];
+    var inited = false;
+    var timer;
 
-}(window.jQuery);
+    function resize() {
+      $timeout.cancel(timer);
+      timer = $timeout(notify, 100);
+    }
+
+    function notify() {
+      for (var i = 0, cnt = registered.length; i < cnt; i++) {
+        registered[i].apply();
+      }
+    }
+
+    function register(fn) {
+      registered.push(fn);
+      if (inited === false) {
+        angular.element($window).bind('resize', resize);
+        inited = true;
+      }
+    }
+
+    function unregister(fn) {
+      var registeredFnIndex = registered.indexOf(fn);
+      if (registeredFnIndex > -1) {
+        registered.splice(registeredFnIndex, 1);
+      }
+    }
+
+    return {
+      register: register,
+      unregister: unregister
+    }
+  }]);
+
+  app.factory('TabDrop', ['$compile', '$timeout', 'TabdropWinResizer', function($compile, $timeout, TabdropWinResizer) {
+
+    TabDrop.prototype = {
+      constructor: TabDrop,
+
+      layout: function () {
+        var self = this;
+        var collection = [];
+        var isUsingFlexbox = function(el){
+          return el.element.css('display').indexOf('flex') > -1;
+        };
+
+        function setDropdownText(text) {
+          self.dropdown.find('a span.display-tab').html(text);
+        }
+
+        function setDropdownDefaultText(collection) {
+          var text;
+          if (angular.isFunction(self.options.text)) {
+            text = self.options.text(collection);
+          } else {
+            text = self.options.text;
+          }
+          setDropdownText(text);
+        }
+
+        // Flexbox support
+        function handleFlexbox(){
+          if (isUsingFlexbox(self)){
+            if (self.element.find('li.tabdrop').hasClass('pull-right')){
+              self.element.find('li.tabdrop').css({position: 'absolute', right: 0});
+              self.element.css('padding-right', self.element.find('.tabdrop').outerWidth(true));
+            }
+          }
+        }
+
+        function checkOffsetAndPush(recursion) {
+          self.element.find('> li:not(.tabdrop)')
+            .each(function () {
+              if (this.offsetTop > self.options.offsetTop) {
+                collection.push(this);
+              }
+            });
+
+          if (collection.length > 0) {
+            if (!recursion) {
+              self.dropdown.removeClass('hide');
+              self.dropdown.find('ul').empty();
+            }
+            self.dropdown.find('ul').prepend(collection);
+
+            if (self.dropdown.find('.active').length == 1) {
+              self.dropdown.addClass('active');
+              setDropdownText(self.dropdown.find('.active > a').html());
+            } else {
+              self.dropdown.removeClass('active');
+              setDropdownDefaultText(collection);
+            }
+            handleFlexbox();
+            collection = [];
+            checkOffsetAndPush(true);
+          } else {
+            if (!recursion) {
+              self.dropdown.addClass('hide');
+            }
+          }
+        }
+
+        self.element.append(self.dropdown.find('li'));
+        checkOffsetAndPush();
+      }
+    };
+
+    return TabDrop;
+
+    function TabDrop(element, options) {
+      this.element = element;
+      this.options = options;
+
+      if (options.align === 'left') {
+        this.dropdown = $('<li class="dropdown hide pull-left tabdrop" dropdown><a class="dropdown-toggle" dropdown-toggle href="#"></a><ul class="dropdown-menu"></ul></li>');
+      } else {
+        this.dropdown = $('<li class="dropdown hide pull-right tabdrop" dropdown><a class="dropdown-toggle" dropdown-toggle href="#"></a><ul class="dropdown-menu"></ul></li>');
+      }
+
+      $compile(this.dropdown)(this.element.scope());
+      this.dropdown.prependTo(this.element);
+      if (this.element.parent().is('.tabs-below')) {
+        this.dropdown.addClass('dropup');
+      }
+
+      var boundLayout = angular.element.proxy(this.layout, this);
+
+      TabdropWinResizer.register(boundLayout);
+      $timeout(boundLayout, 300);
+      this.element.on('click', 'li:not(.tabdrop)', boundLayout);
+
+      this.teardown = function () {
+        TabdropWinResizer.unregister(boundLayout);
+        element.off('click', 'li:not(.tabdrop)', boundLayout);
+      };
+
+      this.layout();
+    }
+  }]);
+
+}(window.angular);
