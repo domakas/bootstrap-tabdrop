@@ -89,7 +89,7 @@
     }
   }]);
 
-  app.factory('TabDrop', ['$compile', '$timeout', 'TabdropWinResizer', function($compile, $timeout, TabdropWinResizer) {
+  app.factory('TabDrop', ['$rootScope', '$compile', '$timeout', 'TabdropWinResizer', function($rootScope, $compile, $timeout, TabdropWinResizer) {
 
     TabDrop.prototype = {
       constructor: TabDrop,
@@ -174,7 +174,7 @@
         this.dropdown = $('<li class="dropdown hide pull-right tabdrop" dropdown><a class="dropdown-toggle" dropdown-toggle href="#"></a><ul class="dropdown-menu"></ul></li>');
       }
 
-      $compile(this.dropdown)(this.element.scope());
+      $compile(this.dropdown)($rootScope.$new());
       this.dropdown.prependTo(this.element);
       if (this.element.parent().is('.tabs-below')) {
         this.dropdown.addClass('dropup');

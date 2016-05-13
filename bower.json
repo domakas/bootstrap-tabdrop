@@ -1,6 +1,6 @@
 {
   "name": "bootstrap-tabdrop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/domakas/bootstrap-tabdrop",
   "description": "dropdown tab tool for twitter bootstrap angular.",
   "main": "js/bootstrap-tabdrop.js",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git://github.com/jschab/bootstrap-tabdrop.git"
     },
-    "dependencies": { 
+    "dependencies": {
       "jquery": ">=1.7.1",
       "bootstrap": ">=2.0.4",
       "ui-bootstrap": ">=0.12.1"
