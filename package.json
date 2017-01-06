@@ -1,0 +1,19 @@
+{
+  "name": "bootstrap-tabdrop",
+  "version": "1.0.1",
+  "description": "bootstrap-tabdrop angular edition =================",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/domakas/bootstrap-tabdrop.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/domakas/bootstrap-tabdrop/issues"
+  },
+  "homepage": "https://github.com/domakas/bootstrap-tabdrop#readme"
+}
